@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<canvas id="myCanvas" width="1000" height="500"
+style="border:1px solid #c3c3c3;">
+Your browser does not support the canvas element.
+</canvas>
+
+<script>
+
+var canvas = document.getElementById("myCanvas");
+var ctx = canvas.getContext("2d");
+
+function draw_schematik(x,y){
+
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+var stroke_color = '#000000';
+
+var can_width = 1000;
+var can_height = 500;
+
+var can_draw_width = 800;
+var can_draw_height = 400;
+
+//-------------------------------------------
+var grond_dis = 70;
+var under_arm = 200;
+var upper_arm = 200;
+var end_min = 50;
+var end_max = 10;
+//-------------------------------------------
+
+var target_x = x - (can_width/2);
+var target_y = can_draw_height + ((can_height - can_draw_height)/2) - y;
+
+var point_dis_right = Math.sqrt((Math.pow(target_y,2)) + (Math.pow(target_x-(grond_dis/2),2)));
+var point_dis_left = Math.sqrt((Math.pow(target_y,2)) + (Math.pow(target_x+(grond_dis/2),2)));
+
+if(point_dis_right > under_arm + upper_arm - end_max || point_dis_left > under_arm + upper_arm - end_max || point_dis_right < ((under_arm + upper_arm)/2) - end_min || point_dis_left < ((under_arm + upper_arm)/2) - end_min){
+	stroke_color = '#ff0000';
+}else{
+	stroke_color = '#000000';
+}
+
+
+console.log(point_dis_right + " & " + point_dis_left);
+
+var arc_bottom_right = Math.asin((target_x-(grond_dis/2))/point_dis_right);
+var arc_bottom_left = Math.asin((target_x+(grond_dis/2))/point_dis_left);
+
+var beta_right = Math.acos((0.5*Math.pow(point_dis_right,2)-0.5*Math.pow(upper_arm,2)+0.5*Math.pow(under_arm,2))/(point_dis_right*under_arm));
+var beta_left = Math.acos((0.5*Math.pow(point_dis_left,2)-0.5*Math.pow(upper_arm,2)+0.5*Math.pow(under_arm,2))/(point_dis_left*under_arm));
+
+var theta_under_right = -1.5 * Math.PI - arc_bottom_right - beta_right;
+var theta_under_left = -1.5 * Math.PI - arc_bottom_left + beta_left;
+
+var under_x_right = under_arm * Math.cos(theta_under_right);
+var under_y_right = under_arm * Math.sin(theta_under_right);
+var under_x_left = under_arm * Math.cos(theta_under_left);
+var under_y_left = under_arm * Math.sin(theta_under_left);
+
+var pos_under_arm_top_right = [2];
+pos_under_arm_top_right[0] = can_width/2 + (grond_dis/2) + under_x_right;
+pos_under_arm_top_right[1] = (can_height - can_draw_height)/2 + can_draw_height - under_y_right;
+var pos_under_arm_top_left = [2];
+pos_under_arm_top_left[0] = can_width/2 - (grond_dis/2) + under_x_left;
+pos_under_arm_top_left[1] = (can_height - can_draw_height)/2 + can_draw_height - under_y_left;	
+
+ctx.strokeStyle = stroke_color;
+ctx.font = "15px Arial";
+
+ctx.beginPath();
+ctx.rect((can_width - can_draw_width)/2,(can_height - can_draw_height)/2,can_draw_width,can_draw_height);
+ctx.stroke();
+
+ctx.beginPath();
+var M2 =  ((theta_under_right * (360/(2*Math.PI)))+180)*(-1);
+ctx.fillText(`M2 = ${M2.toFixed(2)}`,can_width/2+(grond_dis/2)-40,(can_height - can_draw_height)/2+can_draw_height + 30);
+ctx.arc(can_width/2+(grond_dis/2),(can_height - can_draw_height)/2+can_draw_height,10,0,2*Math.PI);
+ctx.stroke();
+
+ctx.beginPath();
+var M1 =  ((theta_under_left * (360/(2*Math.PI)))+180)*(-1);
+ctx.fillText(`M1 = ${M1.toFixed(2)}`,can_width/2-(grond_dis/2)-50,(can_height - can_draw_height)/2+can_draw_height + 30);
+ctx.arc(can_width/2-(grond_dis/2),(can_height - can_draw_height)/2+can_draw_height,10,0,2*Math.PI);
+ctx.stroke();
+
+ctx.beginPath();
+ctx.moveTo(can_width/2+(grond_dis/2),(can_height - can_draw_height)/2+can_draw_height);
+ctx.lineTo(pos_under_arm_top_right[0],pos_under_arm_top_right[1]);
+ctx.lineTo(can_width/2+target_x,(can_height - can_draw_height)/2+can_draw_height-target_y);
+ctx.stroke();
+
+ctx.beginPath();
+ctx.moveTo(can_width/2-(grond_dis/2),(can_height - can_draw_height)/2+can_draw_height);
+ctx.lineTo(pos_under_arm_top_left[0],pos_under_arm_top_left[1]);
+ctx.lineTo(can_width/2+target_x,(can_height - can_draw_height)/2+can_draw_height-target_y);
+ctx.stroke();
+
+ctx.beginPath();
+ctx.arc(pos_under_arm_top_right[0],pos_under_arm_top_right[1],10,0,2*Math.PI);
+ctx.stroke();
+
+ctx.beginPath();
+ctx.arc(pos_under_arm_top_left[0],pos_under_arm_top_left[1],10,0,2*Math.PI);
+ctx.stroke();
+
+
+ctx.beginPath();
+ctx.fillText(`[${target_x}|${target_y}]`,can_width/2+target_x + 20,(can_height - can_draw_height)/2+can_draw_height-target_y);
+ctx.arc(can_width/2+target_x,(can_height - can_draw_height)/2+can_draw_height-target_y,10,0,2*Math.PI);
+ctx.stroke();
+}
+
+function getMousePos(canvas, evt){
+	var rect = canvas.getBoundingClientRect();
+	return {
+		x: evt.clientX - rect.left,
+		y: evt.clientY - rect.top
+	};
+}
+
+canvas.addEventListener('mousemove', function(evt) {
+	var mousePos = getMousePos(canvas, evt);
+	draw_schematik(mousePos.x ,mousePos.y);
+}, false);
+
+</script>
+
+</body>
+</html>
